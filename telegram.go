@@ -5,6 +5,7 @@ import (
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 	"net/http"
 	"fmt"
+	"time"
 )
 
 func init()  {
@@ -19,10 +20,27 @@ type TelegramHandler struct {
 }
 
 func (h TelegramHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
+	w.Header().Set("Test", time.Now().Format(time.RFC1123))
+	w.Write([]byte("test"))
+
 	return h.Next.ServeHTTP(w, r)
 }
 
 func setup(c *caddy.Controller) error {
-	fmt.Println("test")
+	cnf := httpserver.GetConfig(c)
+	for c.Next() {
+		if !c.NextArg() {       // expect at least one value
+			return c.ArgErr()   // otherwise it's an error
+		}
+		value := c.Val()        // use the value
+		fmt.Println(value)
+	}
+	mid := func(next httpserver.Handler) httpserver.Handler {
+		return &TelegramHandler{
+			Next: next,
+		}
+	}
+
+	cnf.AddMiddleware(mid)
 	return nil
 }
